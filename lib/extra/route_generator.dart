@@ -12,10 +12,9 @@ class RouteGenerator {
       case '/home':
         if (args is Admin) {
           return MaterialPageRoute(
-            builder: (_) =>
-                HomeScreen(
-                  user: args,
-                ),
+            builder: (_) => HomeScreen(
+              user: args,
+            ),
           );
         }
         return _errorRoute();
@@ -23,16 +22,17 @@ class RouteGenerator {
         return _errorRoute();
     }
   }
+
   static Route<dynamic> _errorRoute() {
-    return MaterialPageRoute(
-        builder: (_) {
-          return Scaffold(
-            appBar: AppBar(title: Text('Error'),),
-            body: Center(child: Text('An issue has occurred, try again later'),),
-          );
-        }
-    );
+    return MaterialPageRoute(builder: (_) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text('Error'),
+        ),
+        body: Center(
+          child: Text('An issue has occurred, try again later'),
+        ),
+      );
+    });
   }
 }
-
-
