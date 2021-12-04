@@ -15,7 +15,7 @@ class _HomeScreenState extends State<HomeScreen> {
     MembersScreen(),
     CategoriesScreen(),
     ComponentsScreen(),
-    ListScreen(),
+    LoanScreen(),
   ];
 
   @override

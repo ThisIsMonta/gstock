@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gstock/classes/Category.dart';
 import 'package:gstock/classes/Component.dart';
+import 'package:gstock/classes/Loan.dart';
 import 'package:gstock/classes/Member.dart';
 
 class CustomWidgets {
@@ -42,6 +43,106 @@ class CustomWidgets {
                 Text("Quantity : ${component.quantity}"),
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget loanCard(Loan loan) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: <Widget>[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  loan.member.name,
+                  style: TextStyle(color: Colors.grey, fontSize: 24.0),
+                ),
+                Text(
+                  loan.member.phoneNumber,
+                  style: TextStyle(color: Colors.grey[400], fontSize: 16.0),
+                ),
+              ],
+            ),
+            SizedBox(height: 5.0,),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  loan.component.name,
+                  style: TextStyle(color: Colors.grey[700], fontSize: 16.0),
+                ),
+                Text(
+                  loan.loanDate.toIso8601String(),
+                  style: TextStyle(color: Colors.black, fontSize: 16.0),
+                ),
+              ],
+            ),
+            SizedBox(height: 5.0,),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Quantity : ${loan.component.quantity}",
+                  style: TextStyle(color: Colors.grey, fontSize: 16.0),
+                ),
+                RichText(
+                  text: TextSpan(
+                    text: 'Status : ',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 12.0,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: '${loan.status}',
+                        style: TextStyle(
+                          color: loan.status == "Still"?Colors.green:Colors.blue,
+                          fontSize: 12.0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (loan.state.length != 0)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  SizedBox(height: 5.0,),
+                  RichText(
+                    text: TextSpan(
+                      text: 'State : ',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 12.0,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: '${loan.state}',
+                          style: TextStyle(
+                            color: loan.state == "Intact"?Colors.green:Colors.red,
+                            fontSize: 12.0,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              )
           ],
         ),
       ),
@@ -212,4 +313,5 @@ class CustomWidgets {
       ),
     );
   }
+
 }
