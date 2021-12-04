@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class Component {
   final String name;
-  final String quantity;
+  final int quantity;
   final String family;
 
   Component({

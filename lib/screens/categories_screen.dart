@@ -80,7 +80,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 0),
             child: GridView.count(
               crossAxisCount: 2,
-              childAspectRatio: 2.5,
+              childAspectRatio: CustomWidgets.getWidth(context)*0.005,
               shrinkWrap: true,
               children: List.generate(categories.length, (index) {
                 return CustomWidgets.categoryCard(categories[index], index);
@@ -94,7 +94,67 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             width: double.infinity,
             height: 40.0,
             child: TextButton(
-              onPressed: () {},
+              onPressed: () {
+                showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: Text("Add new category"),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            TextFormField(
+                              keyboardType: TextInputType.text,
+                              style: TextStyle(color: Colors.black),
+                              decoration: InputDecoration(
+                                prefixIcon: Icon(
+                                  Icons.category,
+                                  color: Colors.grey,
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey[300],
+                                contentPadding:
+                                new EdgeInsets.symmetric(vertical: 0.0, horizontal: 0.0),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide.none,
+                                  borderRadius: BorderRadius.circular(10.0),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderSide: BorderSide.none,
+                                  borderRadius: BorderRadius.circular(10.0),
+                                ),
+                                errorBorder: InputBorder.none,
+                                disabledBorder: InputBorder.none,
+                                hintText: 'Category name',
+                                hintStyle: TextStyle(color: Colors.grey),
+                                labelStyle: TextStyle(color: Colors.grey),
+                              ),
+                            ),
+                          ],
+                        ),
+                        actions: <Widget>[
+                          FlatButton(
+                            child: Text(
+                              "Cancel",
+                              style: TextStyle(color: Colors.black),
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                          FlatButton(
+                            child: Text(
+                              "Add",
+                              style: TextStyle(color: Colors.blueAccent),
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                        ],
+                      );
+                    });
+              },
               style: ButtonStyle(
                 backgroundColor: MaterialStateProperty.resolveWith<Color>(
                       (Set<MaterialState> states) =>
