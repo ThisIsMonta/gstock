@@ -8,10 +8,10 @@ void main() {
 class MyApp extends StatelessWidget {
 
   final ColorScheme colorScheme = ColorScheme(
-    primary: Color(0xff026895), // <---- I set white color here
-    primaryVariant: Color(0xff018dcd),
+    primary: Color(0xff026895),
+    primaryVariant: Color(0xff014a69),
     secondary: Color(0xff9B9E7D),
-    secondaryVariant: Color(0xFFFAFBFB),
+    secondaryVariant: Color(0xff6b6d56),
     background: Color(0xFF636363),
     surface: Color(0xFF808080),
     onBackground: Colors.white,

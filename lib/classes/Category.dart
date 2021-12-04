@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 
 import 'Component.dart';
 
-class ComponentFamily {
+class Category {
   final String name;
-  final List<Component> components;
 
-  ComponentFamily({
+  Category({
     required this.name,
-    required this.components,
   });
 }

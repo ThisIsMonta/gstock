@@ -115,10 +115,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       (Set<MaterialState> states) =>
                           Theme.of(context).colorScheme.secondary,
                     ),
-                    overlayColor: MaterialStateProperty.all(Colors.transparent),
+                    overlayColor: MaterialStateProperty.all(Theme.of(context).colorScheme.secondaryVariant),
                     shape: MaterialStateProperty.all(RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(3.0),
-                    )),
+                    ),),
                   ),
                   onPressed: () {
                     _login();
