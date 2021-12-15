@@ -1,10 +1,3 @@
-import 'package:flutter/material.dart';
-
-class AdminDBFields{
-  static const String dbf_username="username";
-  static const String dbf_password="password";
-}
-
 class Admin {
   final String username;
   final String password;
@@ -14,10 +7,20 @@ class Admin {
     required this.password,
   });
 
-  Map<String, Object?> toJson() {
+  Map<String, dynamic> toJson() {
     return {
-      AdminDBFields.dbf_username : username,
-      AdminDBFields.dbf_password : password,
+      "username": this.username,
+      "password": this.password,
     };
   }
+
+  factory Admin.fromJson(Map<String, dynamic> json) {
+    return Admin(
+      username: json["username"],
+      password: json["password"],
+    );
+  }
+
+//
+
 }

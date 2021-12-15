@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:gstock/classes/Category.dart';
 import 'package:gstock/classes/Component.dart';
+import 'package:gstock/database/database_helper.dart';
 import 'package:gstock/extra/custom_widgets.dart';
 
 class ComponentsScreen extends StatefulWidget {
@@ -10,20 +12,63 @@ class ComponentsScreen extends StatefulWidget {
 }
 
 class _ComponentsScreenState extends State<ComponentsScreen> {
-  final components = [
-    Component(name: "Item 1", quantity: 3, family: "Arduino Uno R2"),
-    Component(name: "Item 2", quantity: 3, family: "STM32F407"),
-    Component(name: "Item 1", quantity: 3, family: "Arduino Uno R2"),
-    Component(name: "Item 2", quantity: 3, family: "STM32F407"),
-    Component(name: "Item 1", quantity: 3, family: "Arduino Uno R2"),
-    Component(name: "Item 2", quantity: 3, family: "STM32F407"),
-    Component(name: "Item 1", quantity: 3, family: "Arduino Uno R2"),
-    Component(name: "Item 2", quantity: 3, family: "STM32F407"),
-    Component(name: "Item 1", quantity: 3, family: "Arduino Uno R2"),
-    Component(name: "Item 2", quantity: 3, family: "STM32F407"),
-    Component(name: "Item 1", quantity: 3, family: "Arduino Uno R2"),
-    Component(name: "Item 2", quantity: 3, family: "STM32F407"),
-  ];
+  TextEditingController _searchController = TextEditingController();
+  TextEditingController _nameController = TextEditingController();
+  TextEditingController _quantityController = TextEditingController();
+  bool isLoading = false;
+  final _addComponentFormKey = GlobalKey<FormState>();
+
+  late List<dynamic> components;
+  late List<Category> categories;
+
+  late dynamic selectedCategory;
+  late List<DropdownMenuItem> menuItemList;
+
+  int _selectedQuantityToUpdate = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    getAllComponents();
+  }
+
+  @override
+  void dispose() {
+    DatabaseHelper.instance.closeDB();
+    super.dispose();
+  }
+
+  Future getAllComponents() async {
+    setState(() {
+      isLoading = true;
+    });
+    this.components = await DatabaseHelper.instance.getAllComponents();
+    this.categories = await DatabaseHelper.instance.getAllCategories();
+    selectedCategory = categories[0];
+    menuItemList = categories
+        .map(
+          (val) => DropdownMenuItem(
+            value: val,
+            child: Text(val.name),
+          ),
+        )
+        .toList();
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  Future<Component> addComponent(Component component) async {
+    return await DatabaseHelper.instance.addComponent(component);
+  }
+
+  Future<int> updateComponent(int id) async {
+    return await DatabaseHelper.instance.updateQuantity(_selectedQuantityToUpdate,id);
+  }
+
+  Future<int> deleteComponent(int id) async {
+    return await DatabaseHelper.instance.deleteComponent(id);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +81,10 @@ class _ComponentsScreenState extends State<ComponentsScreen> {
           width: double.infinity,
           padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
           child: TextFormField(
+            onChanged: (value) {
+              searchForComponent(value);
+            },
+            controller: _searchController,
             keyboardType: TextInputType.text,
             style: TextStyle(color: Colors.black),
             decoration: InputDecoration(
@@ -46,7 +95,7 @@ class _ComponentsScreenState extends State<ComponentsScreen> {
               filled: true,
               fillColor: Colors.grey[300],
               contentPadding:
-                  new EdgeInsets.symmetric(vertical: 0.0, horizontal: 0.0),
+              new EdgeInsets.symmetric(vertical: 0.0, horizontal: 0.0),
               focusedBorder: OutlineInputBorder(
                 borderSide: BorderSide.none,
                 borderRadius: BorderRadius.circular(10.0),
@@ -57,120 +106,196 @@ class _ComponentsScreenState extends State<ComponentsScreen> {
               ),
               errorBorder: InputBorder.none,
               disabledBorder: InputBorder.none,
-              hintText: 'Search for components',
+              hintText: 'Search for category',
               hintStyle: TextStyle(color: Colors.grey),
               labelStyle: TextStyle(color: Colors.grey),
+              suffixIcon: _searchController.text.length > 0
+                  ? IconButton(
+                onPressed: () {
+                  _searchController.clear();
+                  getAllComponents();
+                },
+                icon: Icon(Icons.clear),
+              )
+                  : null,
             ),
           ),
         ),
-        Flexible(
+        Expanded(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 0),
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: components.length,
-              itemBuilder: (BuildContext context, int index) {
-                return Dismissible(
-                  direction: DismissDirection.horizontal,
-                  // Each Dismissible must contain a Key. Keys allow Flutter to
-                  // uniquely identify widgets.
-                  key: UniqueKey(),
-                  // Provide a function that tells the app
-                  // what to do after an item has been swiped away.
-                  confirmDismiss: (direction) async {
-                    if (direction == DismissDirection.startToEnd) {
-                      final bool res = await showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              content: Text(
-                                  "Are you sure you want to delete ${components[index].name} ?"),
-                              actions: <Widget>[
-                                FlatButton(
-                                  child: Text(
-                                    "Cancel",
-                                    style: TextStyle(color: Colors.black),
-                                  ),
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                ),
-                                FlatButton(
-                                  child: Text(
-                                    "Delete",
-                                    style: TextStyle(color: Colors.red),
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      components.removeAt(index);
-                                    });
-                                    Navigator.of(context).pop();
-                                  },
-                                ),
-                              ],
-                            );
-                          });
-                      return res;
-                    } else {
-                      final bool res = await showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              title: Text(
-                                  "Update ${components[index].name}'s quantity"),
-                              content: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  IconButton(
-                                    onPressed: () {},
-                                    icon: Icon(Icons.add),
-                                  ),
-                                  Text("7"),
-                                  IconButton(
-                                    onPressed: () {},
-                                    icon: Icon(Icons.remove),
-                                  ),
-                                ],
-                              ),
-                              actions: <Widget>[
-                                FlatButton(
-                                  child: Text(
-                                    "Cancel",
-                                    style: TextStyle(color: Colors.black),
-                                  ),
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                ),
-                                FlatButton(
-                                  child: Text(
-                                    "Update",
-                                    style: TextStyle(color: Colors.red),
-                                  ),
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        duration: const Duration(seconds: 1),
+            child: isLoading
+                ? Center(
+                    child: CircularProgressIndicator(),
+                  )
+                : this.categories.isNotEmpty && this.components.isNotEmpty
+                    ? ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: components.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          return Dismissible(
+                            direction: DismissDirection.horizontal,
+                            key: UniqueKey(),
+                            confirmDismiss: (direction) async {
+                              if (direction == DismissDirection.startToEnd) {
+                                final bool res = await showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return AlertDialog(
                                         content: Text(
-                                            'Component "${components[index].name}" updated !'),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
-                            );
-                          });
-                      return res;
-                    }
-                  },
-                  background: CustomWidgets.slideLeftBackground(),
-                  secondaryBackground: CustomWidgets.slideRightBackground(),
-                  child: CustomWidgets.componentCard(components[index]),
-                );
-              },
-            ),
+                                            "Are you sure you want to delete ${components[index]["name"]} ?"),
+                                        actions: <Widget>[
+                                          FlatButton(
+                                            child: Text(
+                                              "Cancel",
+                                              style: TextStyle(
+                                                  color: Colors.black),
+                                            ),
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                          ),
+                                          FlatButton(
+                                            child: Text(
+                                              "Delete",
+                                              style:
+                                                  TextStyle(color: Colors.red),
+                                            ),
+                                            onPressed: () async {
+                                              int res = await deleteComponent(components[index]["id"]!);
+                                            if (res == 1) {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                  duration: const Duration(
+                                                      seconds: 1),
+                                                  content: Text(
+                                                      'Component "${components[index]["name"]}" removed !'),
+                                                ),
+                                              );
+                                              getAllComponents();
+                                            } else {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                  duration: const Duration(
+                                                      seconds: 1),
+                                                  content: Text(
+                                                      'Error has occurred !'),
+                                                ),
+                                              );
+                                            }
+                                              Navigator.of(context).pop();
+                                            },
+                                          ),
+                                        ],
+                                      );
+                                    });
+                                return res;
+                              } else {
+                                setState(() {
+                                  _selectedQuantityToUpdate = components[index]["quantity"];
+                                });
+                                final bool res = await showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return StatefulBuilder(
+                                        builder: (context,setState){
+                                          return AlertDialog(
+                                            title: Text(
+                                                "Update ${components[index]["name"]}'s quantity"),
+                                            content: Row(
+                                              mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                              crossAxisAlignment:
+                                              CrossAxisAlignment.center,
+                                              children: [
+                                                IconButton(
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      _selectedQuantityToUpdate++;
+                                                    });
+                                                    print(_selectedQuantityToUpdate);
+                                                  },
+                                                  icon: Icon(Icons.add),
+                                                ),
+                                                Text("$_selectedQuantityToUpdate"),
+                                                IconButton(
+                                                  onPressed: () {
+                                                    if(_selectedQuantityToUpdate>=1){
+                                                      setState(() {
+                                                        _selectedQuantityToUpdate--;
+                                                      });
+                                                      print(_selectedQuantityToUpdate);
+                                                    }
+                                                  },
+                                                  icon: Icon(Icons.remove),
+                                                ),
+                                              ],
+                                            ),
+                                            actions: <Widget>[
+                                              FlatButton(
+                                                child: Text(
+                                                  "Cancel",
+                                                  style: TextStyle(
+                                                      color: Colors.black),
+                                                ),
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+                                                },
+                                              ),
+                                              FlatButton(
+                                                child: Text(
+                                                  "Update",
+                                                  style:
+                                                  TextStyle(color: Colors.red),
+                                                ),
+                                                onPressed: () async {
+                                                  int res = await updateComponent(components[index]["id"]);
+                                                  if (res == 1) {
+                                                    ScaffoldMessenger.of(context)
+                                                        .showSnackBar(
+                                                      SnackBar(
+                                                        duration: const Duration(
+                                                            seconds: 1),
+                                                        content: Text(
+                                                            'Component "${components[index]["name"]}" updated !'),
+                                                      ),
+                                                    );
+                                                    getAllComponents();
+                                                  } else {
+                                                    ScaffoldMessenger.of(context)
+                                                        .showSnackBar(
+                                                      SnackBar(
+                                                        duration: const Duration(
+                                                            seconds: 1),
+                                                        content: Text(
+                                                            'Error has occurred !'),
+                                                      ),
+                                                    );
+                                                  }
+                                                  Navigator.of(context).pop();
+                                                },
+                                              ),
+                                            ],
+                                          );
+                                        }
+                                      );
+                                    });
+                                return res;
+                              }
+                            },
+                            background: CustomWidgets.slideLeftBackground(),
+                            secondaryBackground:
+                              CustomWidgets.slideRightBackground(Icon(Icons.edit,color: Colors.white,),(Colors.blue[700])!,"Edit"),
+                            child: CustomWidgets.componentCard(
+                                components[index]),
+                          );
+                        },
+                      )
+                    : Center(
+                        child: Text("No components found, add new ones"),
+                      ),
           ),
         ),
         Padding(
@@ -185,38 +310,103 @@ class _ComponentsScreenState extends State<ComponentsScreen> {
                     builder: (BuildContext context) {
                       return AlertDialog(
                         title: Text("Add new component"),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            TextFormField(
-                              keyboardType: TextInputType.text,
-                              style: TextStyle(color: Colors.black),
-                              decoration: InputDecoration(
-                                prefixIcon: Icon(
-                                  Icons.settings_input_component,
-                                  color: Colors.grey,
+                        content: Form(
+                          key: _addComponentFormKey,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TextFormField(
+                                controller: _nameController,
+                                keyboardType: TextInputType.text,
+                                style: TextStyle(color: Colors.black),
+                                decoration: InputDecoration(
+                                  prefixIcon: Icon(
+                                    Icons.settings_input_component,
+                                    color: Colors.grey,
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.grey[300],
+                                  contentPadding: new EdgeInsets.symmetric(
+                                      vertical: 0.0, horizontal: 0.0),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide.none,
+                                    borderRadius: BorderRadius.circular(10.0),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderSide: BorderSide.none,
+                                    borderRadius: BorderRadius.circular(10.0),
+                                  ),
+                                  errorBorder: InputBorder.none,
+                                  disabledBorder: InputBorder.none,
+                                  hintText: 'Component name',
+                                  hintStyle: TextStyle(color: Colors.grey),
+                                  labelStyle: TextStyle(color: Colors.grey),
                                 ),
-                                filled: true,
-                                fillColor: Colors.grey[300],
-                                contentPadding:
-                                new EdgeInsets.symmetric(vertical: 0.0, horizontal: 0.0),
-                                focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide.none,
-                                  borderRadius: BorderRadius.circular(10.0),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderSide: BorderSide.none,
-                                  borderRadius: BorderRadius.circular(10.0),
-                                ),
-                                errorBorder: InputBorder.none,
-                                disabledBorder: InputBorder.none,
-                                hintText: 'Component name',
-                                hintStyle: TextStyle(color: Colors.grey),
-                                labelStyle: TextStyle(color: Colors.grey),
                               ),
-                            ),
-                            SizedBox(height: 10.0,)
-                          ],
+                              SizedBox(
+                                height: 10.0,
+                              ),
+                              TextFormField(
+                                controller: _quantityController,
+                                keyboardType: TextInputType.number,
+                                style: TextStyle(color: Colors.black),
+                                decoration: InputDecoration(
+                                  prefixIcon: Icon(
+                                    Icons.twenty_one_mp,
+                                    color: Colors.grey,
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.grey[300],
+                                  contentPadding: new EdgeInsets.symmetric(
+                                      vertical: 0.0, horizontal: 0.0),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide.none,
+                                    borderRadius: BorderRadius.circular(10.0),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderSide: BorderSide.none,
+                                    borderRadius: BorderRadius.circular(10.0),
+                                  ),
+                                  errorBorder: InputBorder.none,
+                                  disabledBorder: InputBorder.none,
+                                  hintText: 'Component quantity',
+                                  hintStyle: TextStyle(color: Colors.grey),
+                                  labelStyle: TextStyle(color: Colors.grey),
+                                ),
+                              ),
+                              SizedBox(
+                                height: 10.0,
+                              ),
+                              Container(
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[300],
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: DropdownButtonFormField<dynamic>(
+                                    decoration: InputDecoration(
+                                      prefixIcon: Icon(Icons.category),
+                                      enabledBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(
+                                            color: Colors.transparent),
+                                      ),
+                                    ),
+                                    value: selectedCategory,
+                                    icon: const Icon(Icons.arrow_drop_down),
+                                    elevation: 16,
+                                    style: const TextStyle(color: Colors.grey),
+                                    onChanged: (newValue) {
+                                      setState(() {
+                                        selectedCategory = newValue;
+                                      });
+                                    },
+                                    items: this.menuItemList),
+                              ),
+                              SizedBox(
+                                height: 10.0,
+                              )
+                            ],
+                          ),
                         ),
                         actions: <Widget>[
                           FlatButton(
@@ -233,8 +423,33 @@ class _ComponentsScreenState extends State<ComponentsScreen> {
                               "Add",
                               style: TextStyle(color: Colors.blueAccent),
                             ),
-                            onPressed: () {
-                              Navigator.of(context).pop();
+                            onPressed: () async {
+                              if (_addComponentFormKey.currentState!
+                                  .validate()) {
+                                Component res = await addComponent(
+                                  Component(
+                                      name: _nameController.text,
+                                      quantity:
+                                          int.parse(_quantityController.text),
+                                      categoryId: selectedCategory.id),
+                                );
+                                print("res $res");
+                                if (res != null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text('Category added')),
+                                  );
+                                  _addComponentFormKey.currentState!.reset();
+                                  Navigator.of(context).pop();
+                                  getAllComponents();
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Error')),
+                                  );
+                                }
+                              } else {
+                                print("not valid");
+                              }
                             },
                           ),
                         ],
@@ -256,7 +471,7 @@ class _ComponentsScreenState extends State<ComponentsScreen> {
                 ),
               ),
               child: Text(
-                "Add new components",
+                "Add new component",
                 style: TextStyle(
                     color: Theme.of(context).colorScheme.onBackground),
               ),
@@ -266,4 +481,19 @@ class _ComponentsScreenState extends State<ComponentsScreen> {
       ],
     );
   }
+
+  void searchForComponent(String name) async {
+    if (name.isNotEmpty) {
+      setState(() {
+        isLoading = true;
+      });
+      this.components = await DatabaseHelper.instance.searchComponents(name);
+      setState(() {
+        isLoading = false;
+      });
+    } else {
+      this.components = await DatabaseHelper.instance.getAllComponents();
+    }
+  }
+
 }

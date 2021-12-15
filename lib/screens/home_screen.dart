@@ -33,12 +33,12 @@ class _HomeScreenState extends State<HomeScreen> {
           },
           items: [
             BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: "Home",
+              icon: Icon(Icons.group),
+              label: "Members",
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.category),
-              label: "Families",
+              label: "Categories",
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.airplay_rounded),
@@ -46,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.article),
-              label: "List",
+              label: "Loans",
             ),
           ],
         ),

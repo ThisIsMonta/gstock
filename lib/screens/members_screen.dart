@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gstock/classes/Member.dart';
+import 'package:gstock/database/database_helper.dart';
 import 'package:gstock/extra/custom_widgets.dart';
 import 'package:url_launcher/url_launcher.dart' as UrlLauncher;
 
@@ -11,12 +12,40 @@ class MembersScreen extends StatefulWidget {
 }
 
 class _MembersScreenState extends State<MembersScreen> {
-  final members = [
-    Member(name: "Ahmed ben ali", phoneNumber: "+216 50 104 523"),
-    Member(name: "Ali ben salah", phoneNumber: "+216 99 441 001"),
-    Member(name: "Montassar sghaier", phoneNumber: "+216 51 653 121"),
-    Member(name: "Hamza jouini", phoneNumber: "+216 55 144 023"),
-  ];
+  TextEditingController _searchController = TextEditingController();
+  TextEditingController _nameController = TextEditingController();
+  TextEditingController _phoneNumber1Controller = TextEditingController();
+  TextEditingController _phoneNumber2Controller = TextEditingController();
+  bool isLoading = false;
+  final _addMemberFormKey = GlobalKey<FormState>();
+
+  late List<Member> members;
+
+  @override
+  void initState() {
+    super.initState();
+    getAllMembers();
+  }
+
+  @override
+  void dispose() {
+    DatabaseHelper.instance.closeDB();
+    super.dispose();
+  }
+
+  Future getAllMembers() async {
+    setState(() {
+      isLoading = true;
+    });
+    this.members = await DatabaseHelper.instance.getAllMembers();
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  Future<Member> addMember(Member member) async {
+    return await DatabaseHelper.instance.addMember(member);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,8 +58,12 @@ class _MembersScreenState extends State<MembersScreen> {
           width: double.infinity,
           padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
           child: TextFormField(
+            controller: _searchController,
             keyboardType: TextInputType.text,
             style: TextStyle(color: Colors.black),
+            onChanged: (value) {
+              filterSearchResults(value);
+            },
             decoration: InputDecoration(
               prefixIcon: Icon(
                 Icons.search,
@@ -53,114 +86,141 @@ class _MembersScreenState extends State<MembersScreen> {
               hintText: 'Search for members',
               hintStyle: TextStyle(color: Colors.grey),
               labelStyle: TextStyle(color: Colors.grey),
+              suffixIcon: _searchController.text.length > 0
+                  ? IconButton(
+                      onPressed: () {
+                        _searchController.clear();
+                        getAllMembers();
+                      },
+                      icon: Icon(Icons.clear),
+                    )
+                  : null,
             ),
           ),
         ),
-        Flexible(
-            child: /*ListView.builder(
-            padding: EdgeInsets.all(10.0),
-            shrinkWrap: true,
-            itemCount: 40,
-            itemBuilder: (BuildContext context, int index) {
-              return CustomWidgets.memberCard(context, index);
-            },
-          ),*/
-                Padding(
-          padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 0),
-          child: GridView.count(
-            crossAxisCount: 2,
-            childAspectRatio: CustomWidgets.getWidth(context) * 0.0065,
-            shrinkWrap: true,
-            children: List.generate(members.length, (index) {
-              return Dismissible(
-                direction: DismissDirection.horizontal,
-                // Each Dismissible must contain a Key. Keys allow Flutter to
-                // uniquely identify widgets.
-                key: UniqueKey(),
-                // Provide a function that tells the app
-                // what to do after an item has been swiped away.
-                confirmDismiss: (direction) async {
-                  if (direction == DismissDirection.startToEnd) {
-                    final bool res = await showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            content: Text(
-                                "Are you sure you want to delete ${members[index].name} ?"),
-                            actions: <Widget>[
-                              FlatButton(
-                                child: Text(
-                                  "Cancel",
-                                  style: TextStyle(color: Colors.black),
-                                ),
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                              ),
-                              FlatButton(
-                                child: Text(
-                                  "Delete",
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    members.removeAt(index);
-                                  });
-                                  Navigator.of(context).pop();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      duration: const Duration(seconds: 1),
-                                      content: Text(
-                                          'Member "${members[index].name}" removed !'),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 0),
+            child: isLoading
+                ? Center(
+                    child: CircularProgressIndicator(),
+                  )
+                : this.members.isNotEmpty
+                    ? GridView.count(
+                        crossAxisCount: 2,
+                        childAspectRatio:
+                            CustomWidgets.getWidth(context) * 0.005,
+                        shrinkWrap: true,
+                        children: List.generate(members.length, (index) {
+                          return Dismissible(
+                            direction: DismissDirection.horizontal,
+                            key: UniqueKey(),
+                            confirmDismiss: (direction) async {
+                              if (direction == DismissDirection.startToEnd) {
+                                final bool res = await showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return AlertDialog(
+                                        content: Text(
+                                            "Are you sure you want to delete ${members[index].name} ?"),
+                                        actions: <Widget>[
+                                          FlatButton(
+                                            child: Text(
+                                              "Cancel",
+                                              style: TextStyle(
+                                                  color: Colors.black),
+                                            ),
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                          ),
+                                          FlatButton(
+                                            child: Text(
+                                              "Delete",
+                                              style:
+                                                  TextStyle(color: Colors.red),
+                                            ),
+                                            onPressed: () async {
+                                              int res = await DatabaseHelper
+                                                  .instance
+                                                  .deleteMember(members[index]);
+                                              if (res == 1) {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  SnackBar(
+                                                    duration: const Duration(
+                                                        seconds: 1),
+                                                    content: Text(
+                                                        'Member "${members[index].name}" removed !'),
+                                                  ),
+                                                );
+                                                getAllMembers();
+                                              } else {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  SnackBar(
+                                                    duration: const Duration(
+                                                        seconds: 1),
+                                                    content: Text(
+                                                        'Error has occurred !'),
+                                                  ),
+                                                );
+                                              }
+                                              Navigator.of(context).pop();
+                                            },
+                                          ),
+                                        ],
+                                      );
+                                    });
+                                return res;
+                              } else {
+                                final bool callDialog = await showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return AlertDialog(
+                                        content: Text(
+                                            "Are you sure you want to call ${members[index].name} ?"),
+                                        actions: <Widget>[
+                                          FlatButton(
+                                            child: Text(
+                                              "Cancel",
+                                              style: TextStyle(
+                                                  color: Colors.black),
+                                            ),
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                          ),
+                                          FlatButton(
+                                            child: Text(
+                                              "Call",
+                                              style:
+                                                  TextStyle(color: Colors.red),
+                                            ),
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                              UrlLauncher.launch(
+                                                  "tel://${members[index].phoneNumber1}");
+                                            },
+                                          ),
+                                        ],
+                                      );
+                                    });
+                                return callDialog;
+                              }
+                            },
+                            background: CustomWidgets.slideLeftBackground(),
+                            secondaryBackground:
+                              CustomWidgets.slideRightBackground(Icon(Icons.call,color: Colors.white,),(Colors.blue[900])!,"Call"),
+                            child: CustomWidgets.memberCard(members[index]),
                           );
-                        });
-                    return res;
-                  } 
-                  else {
-                    final bool callDialog = await showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            content: Text(
-                                "Are you sure you want to call ${members[index].name} ?"),
-                            actions: <Widget>[
-                              FlatButton(
-                                child: Text(
-                                  "Cancel",
-                                  style: TextStyle(color: Colors.black),
-                                ),
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                              ),
-                              FlatButton(
-                                child: Text(
-                                  "Call",
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                  UrlLauncher.launch("tel://21471576");
-                                },
-                              ),
-                            ],
-                          );
-                        });
-                    return callDialog;
-                  }
-                },
-                background: CustomWidgets.slideLeftBackground(),
-                secondaryBackground: CustomWidgets.callBackground(context),
-                child: CustomWidgets.memberCard(members[index]),
-              );
-            }),
+                        }),
+                      )
+                    : Center(
+                        child: Text("No Members found, add new ones"),
+                      ),
           ),
-        )),
+        ),
         Padding(
           padding: const EdgeInsets.all(12.0),
           child: SizedBox(
@@ -173,65 +233,118 @@ class _MembersScreenState extends State<MembersScreen> {
                     builder: (BuildContext context) {
                       return AlertDialog(
                         title: Text("Add new member"),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            TextFormField(
-                              keyboardType: TextInputType.text,
-                              style: TextStyle(color: Colors.black),
-                              decoration: InputDecoration(
-                                prefixIcon: Icon(
-                                  Icons.person,
-                                  color: Colors.grey,
+                        content: Form(
+                          key: _addMemberFormKey,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TextFormField(
+                                controller: _nameController,
+                                keyboardType: TextInputType.text,
+                                style: TextStyle(color: Colors.black),
+                                decoration: InputDecoration(
+                                  prefixIcon: Icon(
+                                    Icons.person,
+                                    color: Colors.grey,
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.grey[300],
+                                  contentPadding: new EdgeInsets.symmetric(
+                                      vertical: 0.0, horizontal: 0.0),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide.none,
+                                    borderRadius: BorderRadius.circular(10.0),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderSide: BorderSide.none,
+                                    borderRadius: BorderRadius.circular(10.0),
+                                  ),
+                                  errorBorder: InputBorder.none,
+                                  disabledBorder: InputBorder.none,
+                                  hintText: 'Member name',
+                                  hintStyle: TextStyle(color: Colors.grey),
+                                  labelStyle: TextStyle(color: Colors.grey),
                                 ),
-                                filled: true,
-                                fillColor: Colors.grey[300],
-                                contentPadding:
-                                new EdgeInsets.symmetric(vertical: 0.0, horizontal: 0.0),
-                                focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide.none,
-                                  borderRadius: BorderRadius.circular(10.0),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderSide: BorderSide.none,
-                                  borderRadius: BorderRadius.circular(10.0),
-                                ),
-                                errorBorder: InputBorder.none,
-                                disabledBorder: InputBorder.none,
-                                hintText: 'Member name',
-                                hintStyle: TextStyle(color: Colors.grey),
-                                labelStyle: TextStyle(color: Colors.grey),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'name is required !';
+                                  }
+                                  return null;
+                                },
                               ),
-                            ),
-                            SizedBox(height: 10.0,),
-                            TextFormField(
-                              keyboardType: TextInputType.phone,
-                              style: TextStyle(color: Colors.black),
-                              decoration: InputDecoration(
-                                prefixIcon: Icon(
-                                  Icons.phone,
-                                  color: Colors.grey,
-                                ),
-                                filled: true,
-                                fillColor: Colors.grey[300],
-                                contentPadding:
-                                new EdgeInsets.symmetric(vertical: 0.0, horizontal: 0.0),
-                                focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide.none,
-                                  borderRadius: BorderRadius.circular(10.0),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderSide: BorderSide.none,
-                                  borderRadius: BorderRadius.circular(10.0),
-                                ),
-                                errorBorder: InputBorder.none,
-                                disabledBorder: InputBorder.none,
-                                hintText: 'Member phone number',
-                                hintStyle: TextStyle(color: Colors.grey),
-                                labelStyle: TextStyle(color: Colors.grey),
+                              SizedBox(
+                                height: 10.0,
                               ),
-                            ),
-                          ],
+                              TextFormField(
+                                controller: _phoneNumber1Controller,
+                                keyboardType: TextInputType.phone,
+                                style: TextStyle(color: Colors.black),
+                                decoration: InputDecoration(
+                                  prefixIcon: Icon(
+                                    Icons.phone,
+                                    color: Colors.grey,
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.grey[300],
+                                  contentPadding: new EdgeInsets.symmetric(
+                                      vertical: 0.0, horizontal: 0.0),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide.none,
+                                    borderRadius: BorderRadius.circular(10.0),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderSide: BorderSide.none,
+                                    borderRadius: BorderRadius.circular(10.0),
+                                  ),
+                                  errorBorder: InputBorder.none,
+                                  disabledBorder: InputBorder.none,
+                                  hintText: 'Member phone number',
+                                  hintStyle: TextStyle(color: Colors.grey),
+                                  labelStyle: TextStyle(color: Colors.grey),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Phone number is required !';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              SizedBox(
+                                height: 10.0,
+                              ),
+                              TextFormField(
+                                controller: _phoneNumber2Controller,
+                                keyboardType: TextInputType.phone,
+                                style: TextStyle(color: Colors.black),
+                                decoration: InputDecoration(
+                                  prefixIcon: Icon(
+                                    Icons.phone,
+                                    color: Colors.grey,
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.grey[300],
+                                  contentPadding: new EdgeInsets.symmetric(
+                                      vertical: 0.0, horizontal: 0.0),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide.none,
+                                    borderRadius: BorderRadius.circular(10.0),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderSide: BorderSide.none,
+                                    borderRadius: BorderRadius.circular(10.0),
+                                  ),
+                                  errorBorder: InputBorder.none,
+                                  disabledBorder: InputBorder.none,
+                                  hintText: 'Member phone number 2 (optional)',
+                                  hintStyle: TextStyle(color: Colors.grey),
+                                  labelStyle: TextStyle(color: Colors.grey),
+                                ),
+                                validator: (value) {
+                                  return;
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                         actions: <Widget>[
                           FlatButton(
@@ -243,13 +356,40 @@ class _MembersScreenState extends State<MembersScreen> {
                               Navigator.of(context).pop();
                             },
                           ),
-                          FlatButton(
+                          ElevatedButton(
                             child: Text(
                               "Add",
                               style: TextStyle(color: Colors.blueAccent),
                             ),
-                            onPressed: () {
-                              Navigator.of(context).pop();
+                            onPressed: () async {
+                              if (_addMemberFormKey.currentState!.validate()) {
+                                Member res = await addMember(
+                                  Member(
+                                    name: _nameController.text,
+                                    phoneNumber1: _phoneNumber1Controller.text,
+                                    phoneNumber2:
+                                        _phoneNumber2Controller.text.length > 0
+                                            ? _phoneNumber2Controller.text
+                                            : "",
+                                  ),
+                                );
+                                print("res $res");
+                                if (res != null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text('Member added')),
+                                  );
+                                  _addMemberFormKey.currentState!.reset();
+                                  Navigator.of(context).pop();
+                                  getAllMembers();
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Error')),
+                                  );
+                                }
+                              } else {
+                                print("not valid");
+                              }
                             },
                           ),
                         ],
@@ -280,5 +420,19 @@ class _MembersScreenState extends State<MembersScreen> {
         ),
       ],
     );
+  }
+
+  void filterSearchResults(String name) async {
+    if (name.isNotEmpty) {
+      setState(() {
+        isLoading = true;
+      });
+      this.members = await DatabaseHelper.instance.searchMembers(name);
+      setState(() {
+        isLoading = false;
+      });
+    } else {
+      this.members = await DatabaseHelper.instance.getAllMembers();
+    }
   }
 }

@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:gstock/extra/route_generator.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(
+    MyApp(),
+  );
 }
 
 class MyApp extends StatelessWidget {
-
   final ColorScheme colorScheme = ColorScheme(
     primary: Color(0xff026895),
     primaryVariant: Color(0xff014a69),
@@ -29,10 +30,9 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Gstock',
       theme: ThemeData(
-        primaryColor: Color(0xff026895),
-        colorScheme: colorScheme,
-        fontFamily: 'SourceSansPro'
-      ),
+          primaryColor: Color(0xff026895),
+          colorScheme: colorScheme,
+          fontFamily: 'SourceSansPro'),
       initialRoute: '/',
       onGenerateRoute: RouteGenerator.generateRoute,
     );
