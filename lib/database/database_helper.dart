@@ -270,10 +270,13 @@ class DatabaseHelper {
     return await db.delete("Components", where: "id = ?", whereArgs: [id]);
   }
 
-  Future<int> deleteLoan(int id) async {
+  Future<int> deleteLoan(dynamic loan) async {
     final db = await instance.database;
 
-    return await db.delete("Loans", where: "id = ?", whereArgs: [id]);
+    await db.rawUpdate("UPDATE Components SET quantity = quantity + ? WHERE id = ?",
+        [loan["quantity"], loan["componentId"]]);
+
+    return await db.delete("Loans", where: "id = ?", whereArgs: [loan["id"]]);
   }
 
   Future<List<dynamic>> getAllComponents() async {

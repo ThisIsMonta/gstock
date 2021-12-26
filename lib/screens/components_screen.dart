@@ -12,6 +12,7 @@ class ComponentsScreen extends StatefulWidget {
 }
 
 class _ComponentsScreenState extends State<ComponentsScreen> {
+
   TextEditingController _searchController = TextEditingController();
   TextEditingController _nameController = TextEditingController();
   TextEditingController _quantityController = TextEditingController();
@@ -21,8 +22,9 @@ class _ComponentsScreenState extends State<ComponentsScreen> {
   late List<dynamic> components;
   late List<Category> categories;
 
-  late dynamic selectedCategory;
+  dynamic selectedCategory;
   late List<DropdownMenuItem> menuItemList;
+  bool isCategoriesNull = false;
 
   int _selectedQuantityToUpdate = 0;
 
@@ -44,18 +46,26 @@ class _ComponentsScreenState extends State<ComponentsScreen> {
     });
     this.components = await DatabaseHelper.instance.getAllComponents();
     this.categories = await DatabaseHelper.instance.getAllCategories();
-    selectedCategory = categories[0];
-    menuItemList = categories
-        .map(
-          (val) => DropdownMenuItem(
-            value: val,
-            child: Text(val.name),
-          ),
-        )
-        .toList();
-    setState(() {
-      isLoading = false;
-    });
+    if(categories.isEmpty){
+      setState(() {
+        isLoading = false;
+        isCategoriesNull = true;
+      });
+      return;
+    }else{
+      selectedCategory = categories[0];
+      menuItemList = categories
+          .map(
+            (val) => DropdownMenuItem(
+          value: val,
+          child: Text(val.name),
+        ),
+      )
+          .toList();
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   Future<Component> addComponent(Component component) async {
@@ -106,7 +116,7 @@ class _ComponentsScreenState extends State<ComponentsScreen> {
               ),
               errorBorder: InputBorder.none,
               disabledBorder: InputBorder.none,
-              hintText: 'Search for category',
+              hintText: 'Search for components',
               hintStyle: TextStyle(color: Colors.grey),
               labelStyle: TextStyle(color: Colors.grey),
               suffixIcon: _searchController.text.length > 0
@@ -124,7 +134,7 @@ class _ComponentsScreenState extends State<ComponentsScreen> {
         Expanded(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 0),
-            child: isLoading
+            child : isLoading
                 ? Center(
                     child: CircularProgressIndicator(),
                   )
@@ -304,7 +314,7 @@ class _ComponentsScreenState extends State<ComponentsScreen> {
             width: double.infinity,
             height: 40.0,
             child: TextButton(
-              onPressed: () {
+              onPressed: isCategoriesNull ? null : () {
                 showDialog(
                     context: context,
                     builder: (BuildContext context) {
@@ -459,7 +469,7 @@ class _ComponentsScreenState extends State<ComponentsScreen> {
               style: ButtonStyle(
                 backgroundColor: MaterialStateProperty.resolveWith<Color>(
                   (Set<MaterialState> states) =>
-                      Theme.of(context).colorScheme.primary,
+                  isCategoriesNull ? Colors.red: Theme.of(context).colorScheme.primary,
                 ),
                 overlayColor: MaterialStateProperty.all(
                   Theme.of(context).colorScheme.primaryVariant,
@@ -471,7 +481,7 @@ class _ComponentsScreenState extends State<ComponentsScreen> {
                 ),
               ),
               child: Text(
-                "Add new component",
+                isCategoriesNull ? "Add categories first..." : "Add new component",
                 style: TextStyle(
                     color: Theme.of(context).colorScheme.onBackground),
               ),

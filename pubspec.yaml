@@ -34,9 +34,6 @@ flutter:
   assets:
     - images/app_logo.png
     - images/logo_1.png
-    - images/onboarding/ob1.png
-    - images/onboarding/ob2.png
-    - images/onboarding/ob3.png
   fonts:
      - family: SourceSansPro
        fonts:

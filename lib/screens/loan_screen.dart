@@ -24,6 +24,7 @@ class _LoanScreenState extends State<LoanScreen>
   late List<dynamic> components;
   late List<Member> members;
   bool isLoading = false;
+  bool isComponentsNull = false;
 
   late dynamic selectedComponent;
   late dynamic selectedMember;
@@ -61,27 +62,35 @@ class _LoanScreenState extends State<LoanScreen>
     this.loans = await DatabaseHelper.instance.getAllLoans();
     this.components = await DatabaseHelper.instance.getAllComponents();
     this.members = await DatabaseHelper.instance.getAllMembers();
-    selectedComponent = components[0];
-    selectedMember = members[0];
-    categoriesListMenu = components
-        .map(
-          (val) => DropdownMenuItem(
-            value: val,
-            child: Text(val["name"]),
-          ),
-        )
-        .toList();
-    membersListMenu = members
-        .map(
-          (val) => DropdownMenuItem(
-            value: val,
-            child: Text(val.name),
-          ),
-        )
-        .toList();
-    setState(() {
-      isLoading = false;
-    });
+    if(components.isEmpty || members.isEmpty){
+      setState(() {
+        isLoading = false;
+        isComponentsNull = true;
+      });
+      return;
+    }else{
+      selectedComponent = components[0];
+      selectedMember = members[0];
+      categoriesListMenu = components
+          .map(
+            (val) => DropdownMenuItem(
+          value: val,
+          child: Text(val["name"]),
+        ),
+      )
+          .toList();
+      membersListMenu = members
+          .map(
+            (val) => DropdownMenuItem(
+          value: val,
+          child: Text(val.name),
+        ),
+      )
+          .toList();
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   Future<Loan> addLoan(Loan loan) async {
@@ -91,8 +100,9 @@ class _LoanScreenState extends State<LoanScreen>
   Future<int> markAsReturned(dynamic loan,String date,String state) async {
     return await DatabaseHelper.instance.markComponentAsReturned(loan,date,state);
   }
-  Future<int> deleteLoan(dynamic loanId) async {
-    return await DatabaseHelper.instance.deleteLoan(loanId);
+
+  Future<int> deleteLoan(dynamic loan) async {
+    return await DatabaseHelper.instance.deleteLoan(loan);
   }
 
   void _handleTabSelection() {
@@ -174,7 +184,7 @@ class _LoanScreenState extends State<LoanScreen>
                                                   TextStyle(color: Colors.red),
                                             ),
                                             onPressed: () async {
-                                              int res = await deleteLoan(loans[index]["id"]!);
+                                              int res = await deleteLoan(loans[index]!);
                                               if (res == 1) {
                                                 ScaffoldMessenger.of(context)
                                                     .showSnackBar(
@@ -394,7 +404,7 @@ class _LoanScreenState extends State<LoanScreen>
             width: double.infinity,
             height: 40.0,
             child: TextButton(
-              onPressed: () {
+              onPressed: isComponentsNull ? null : () {
                 showDialog(
                     context: context,
                     builder: (BuildContext context) {
@@ -554,7 +564,7 @@ class _LoanScreenState extends State<LoanScreen>
               },
               style: ButtonStyle(
                 backgroundColor: MaterialStateProperty.resolveWith<Color>(
-                  (Set<MaterialState> states) => Colors.green,
+                  (Set<MaterialState> states) => isComponentsNull ? Colors.red : Colors.green,
                 ),
                 overlayColor: MaterialStateProperty.all(
                   Colors.green[800],
@@ -566,7 +576,7 @@ class _LoanScreenState extends State<LoanScreen>
                 ),
               ),
               child: Text(
-                "Add new loan",
+                isComponentsNull ? "Add members or components first..." : "Add new loan",
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onBackground,
                 ),

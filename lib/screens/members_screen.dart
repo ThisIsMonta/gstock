@@ -305,6 +305,8 @@ class _MembersScreenState extends State<MembersScreen> {
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
                                     return 'Phone number is required !';
+                                  }else if(value.length!=8){
+                                    return 'Phone number must be 8 numbers !';
                                   }
                                   return null;
                                 },
@@ -359,7 +361,7 @@ class _MembersScreenState extends State<MembersScreen> {
                           ElevatedButton(
                             child: Text(
                               "Add",
-                              style: TextStyle(color: Colors.blueAccent),
+                              style: TextStyle(color: Colors.white),
                             ),
                             onPressed: () async {
                               if (_addMemberFormKey.currentState!.validate()) {
